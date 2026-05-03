@@ -32,13 +32,13 @@ rsi_cross:
 # Parámetros XGBoost (solo si strategy == "xgboost")
 xgboost:
   model_path: "models/xgb_model.joblib"
-  prob_buy_threshold: 0.55
-  prob_sell_threshold: 0.45
+  prob_buy_threshold: 0.52   # bajado de 0.55
+  prob_sell_threshold: 0.48  # subido de 0.45
   config_path: "configs/regime_experiment.yaml"
   multi_regime: true
-  bull: { prob_buy_threshold: 0.55, prob_sell_threshold: 0.45 }
-  bear: { prob_short_open_threshold: 0.55, prob_short_close_threshold: 0.45 }
-  sideways: { prob_buy_threshold: 0.55, prob_sell_threshold: 0.45 }
+  bull: { prob_buy_threshold: 0.52, prob_sell_threshold: 0.48 }
+  bear: { prob_short_open_threshold: 0.52, prob_short_close_threshold: 0.48 }
+  sideways: { prob_buy_threshold: 0.52, prob_sell_threshold: 0.48, support_zone_max: 0.40, resistance_zone_min: 0.60 }
 
 # ── Gestión de riesgo ─────────────────────────────
 risk:

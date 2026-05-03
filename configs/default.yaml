@@ -80,7 +80,7 @@ xgboost:
 multi_regime: false
 
 regimes:
-  adx_trending_min: 20
+  adx_trending_min: 15   # bajado de 20 → más barras clasificadas como bull/bear
   trend_column: weekly_trend
   adx_column: weekly_adx
 
@@ -97,16 +97,16 @@ regime_models:
 regime_backtest:
   min_hold_bars: 0
   bull:
-    prob_buy_threshold: 0.55
-    prob_sell_threshold: 0.45
+    prob_buy_threshold: 0.52   # bajado de 0.55 → más señales en tendencia alcista
+    prob_sell_threshold: 0.48  # subido de 0.45 → salida más rápida
   bear:
-    prob_short_open_threshold: 0.55
-    prob_short_close_threshold: 0.45
+    prob_short_open_threshold: 0.52   # bajado de 0.55
+    prob_short_close_threshold: 0.48  # subido de 0.45
   sideways:
-    prob_buy_threshold: 0.55
-    prob_sell_threshold: 0.45
+    prob_buy_threshold: 0.52   # bajado de 0.55
+    prob_sell_threshold: 0.48  # subido de 0.45
 
 # ── Backtest ──────────────────────────────────────────────────
 backtest:
-  prob_buy_threshold: 0.55    # prob(subida) > esto → comprar
-  prob_sell_threshold: 0.45   # prob(subida) < esto → vender/fuera
+  prob_buy_threshold: 0.52    # bajado de 0.55 → más señales de compra
+  prob_sell_threshold: 0.48   # subido de 0.45 → salida más temprana

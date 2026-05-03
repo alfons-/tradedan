@@ -72,6 +72,24 @@ _TF_CACHE: dict[tuple[str, str, str], pd.DataFrame] = {}
 _TF_LAST_TS: dict[tuple[str, str, str], pd.Timestamp] = {}
 
 
+def _resolve_repo_path(path_like: str | Path) -> Path:
+    """Resolve paths from config, remapping legacy absolute repo roots when needed."""
+    p = Path(path_like)
+    if not p.is_absolute():
+        return ROOT / p
+    if p.exists():
+        return p
+
+    parts = p.parts
+    for repo_name in ("tradedan", "trading-ai"):
+        if repo_name in parts:
+            idx = parts.index(repo_name)
+            rel = Path(*parts[idx + 1:]) if idx + 1 < len(parts) else Path()
+            candidate = ROOT / rel
+            return candidate
+    return p
+
+
 def _merge_ohlcv(old: pd.DataFrame | None, new: pd.DataFrame) -> pd.DataFrame:
     if old is None or old.empty:
         return new.sort_values("fecha").reset_index(drop=True)
@@ -432,7 +450,7 @@ def check_xgboost_signal(
     last_row = df_clean.iloc[[-1]][feature_cols]
 
     if not multi_regime:
-        model_path = ROOT / xgb_cfg.get("model_path", "models/xgb_model.joblib")
+        model_path = _resolve_repo_path(xgb_cfg.get("model_path", "models/xgb_model.joblib"))
         if not model_path.exists():
             print(f"[LiveRunner] Modelo no encontrado: {model_path}")
             print("  Ejecuta primero: python -m scripts.run_experiment")
@@ -452,7 +470,7 @@ def check_xgboost_signal(
 
     rm_cfg = ml_cfg.get("regime_models", {})
     path_tpl = str(rm_cfg.get("path_template", "models/xgb_{regime}_{symbol}.joblib"))
-    model_path = ROOT / path_tpl.format(regime=regime, symbol=symbol)
+    model_path = _resolve_repo_path(path_tpl.format(regime=regime, symbol=symbol))
     if not model_path.exists():
         print(f"[LiveRunner] Modelo multi-régimen no encontrado: {model_path} (régimen={regime})")
         print("  Entrena con multi_regime: true en el YAML de ML y run_experiment.")
@@ -514,10 +532,15 @@ def execute_signal(
 
     if signal_type == "buy":
         if not allow_flip:
+            flipped = False
             for pos in list(agent.get_positions(symbol)):
                 if pos.get("side") == "Sell":
                     result = agent.close_short(symbol=symbol, qty=pos["size"])
                     send_trade_email(result, _notify_email_recipients())
+                    flipped = True
+            if flipped:
+                # Pequeña pausa para que el exchange registre el cierre antes de re-consultar
+                time.sleep(2)
             positions = agent.get_positions(symbol)
 
         if len(positions) >= max_positions:
@@ -549,10 +572,15 @@ def execute_signal(
 
     elif signal_type == "open_short":
         if not allow_flip:
+            flipped = False
             for pos in list(agent.get_positions(symbol)):
                 if pos.get("side") == "Buy":
                     result = agent.close_long(symbol=symbol, qty=pos["size"])
                     send_trade_email(result, _notify_email_recipients())
+                    flipped = True
+            if flipped:
+                # Pequeña pausa para que el exchange registre el cierre antes de re-consultar
+                time.sleep(2)
             positions = agent.get_positions(symbol)
 
         if len(positions) >= max_positions:
